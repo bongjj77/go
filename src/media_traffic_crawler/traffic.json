@@ -12,8 +12,8 @@
         "traffic": 927994458,
         "version": "1.0"
     },
-    "stream_list": {
-        "app/123-456": {
+    "stream_list":[{
+            "stream": "app/123-456",
             "input": {
                 "audio_framerate": 47.0,
                 "audio_timestamp": 926229,
@@ -32,6 +32,6 @@
                     "stream": "app/123-456"
                 }
             ]
-        }
-    }
+		}
+	]
 }

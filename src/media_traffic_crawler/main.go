@@ -2,7 +2,7 @@
 Media traffic crawler
 bongjj@gmail.com
 20200301
-restream demone 에서 json 형식의 정보를 특정 시간에 동시 수집 하여  시차/트래픽 정보를 처리
+동일 스트림의 구간 별 Streamer demone API를 동시 호출 하여 json 형식의 정보 수집 하여 시차/트래픽 정보를 처리
 url_list.txt 정보 제공 url 목록
 */
 package main
@@ -26,18 +26,20 @@ const (
 //====================================================================================================
 // Read url(restream demon api)
 //====================================================================================================
-func readURL(url string, result chan<- string) {
+func readURL(url string, traffic chan<- *trafficparse.Traffic) {
 
 	response, error := http.Get(url)
 	if error != nil {
-		result <- (url + " http get fail")
+		fmt.Println(url, "http get fail")
+		traffic <- nil
 		return
 	}
 	defer response.Body.Close()
 
 	data, error := ioutil.ReadAll(response.Body)
 	if error != nil {
-		result <- (url + " body read fail")
+		fmt.Println(url, "body read fail")
+		traffic <- nil
 		return
 	}
 
@@ -45,10 +47,14 @@ func readURL(url string, result chan<- string) {
 	tempData, _ := ioutil.ReadFile("./traffic.json")
 	data = tempData
 
-	trafficparse.RestreamerDataParse(data)
-	fmt.Println(string(data))
-
-	result <- (url + " read comleted")
+	result, parseData := trafficparse.StreamerDataParse(data)
+	if result == false {
+		fmt.Println(url, "data parse fail")
+		traffic <- nil
+		return
+	}
+	fmt.Println(url, "read comleted")
+	traffic <- parseData
 }
 
 //====================================================================================================
@@ -63,7 +69,7 @@ func crawling(urls []string) {
 	urlCount := len(urls)
 	fmt.Println("Url count", urlCount)
 
-	result := make(chan string)
+	result := make(chan *trafficparse.Traffic)
 
 	// read go rutin
 	for index := 0; index < urlCount; index++ {
@@ -72,9 +78,8 @@ func crawling(urls []string) {
 
 	// complted wait
 	for index := 0; index < urlCount; index++ {
-		fmt.Println(<-result)
+		fmt.Println(*(<-result))
 	}
-
 }
 
 //====================================================================================================
