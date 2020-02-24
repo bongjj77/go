@@ -9,44 +9,19 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
+	"trafficparse"
 )
 
 const (
 	programName    = "Media traffic crawler"
 	programVersion = "1.0"
 )
-
-type people struct {
-	Number int `json:"number"`
-}
-
-//====================================================================================================
-// Http response data parse
-// - json data
-// - single input
-// - multi output
-// - timestamp/bitrate/fps
-// ex)
-//====================================================================================================
-func dataParse(data []byte) string {
-
-	people1 := people{}
-	error := json.Unmarshal(data, &people1)
-	if error != nil {
-		fmt.Println("Json parae fail")
-		return ""
-	}
-
-	fmt.Println(people1.Number)
-	return ""
-}
 
 //====================================================================================================
 // Read url(restream demon api)
@@ -66,7 +41,11 @@ func readURL(url string, result chan<- string) {
 		return
 	}
 
-	dataParse(data)
+	// temp test
+	tempData, _ := ioutil.ReadFile("./traffic.json")
+	data = tempData
+
+	trafficparse.RestreamerDataParse(data)
 	fmt.Println(string(data))
 
 	result <- (url + " read comleted")
