@@ -43,10 +43,6 @@ func readURL(url string, traffic chan<- *trafficparse.Traffic) {
 		return
 	}
 
-	// temp test
-	tempData, _ := ioutil.ReadFile("./traffic.json")
-	data = tempData
-
 	result, parseData := trafficparse.StreamerDataParse(data)
 	if result == false {
 		fmt.Println(url, "data parse fail")

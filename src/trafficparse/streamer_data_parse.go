@@ -46,6 +46,8 @@ import (
 	]
 }
 */
+
+// Traffic : json traffic struct
 type Traffic struct {
 	Host struct {
 		CPU         int    `json:"cpu"`
