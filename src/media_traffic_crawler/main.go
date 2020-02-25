@@ -10,10 +10,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"runtime"
+	"sort"
 	"time"
 	"trafficparse"
 )
@@ -24,58 +23,28 @@ const (
 )
 
 //====================================================================================================
-// Read url(restream demon api)
-//====================================================================================================
-func readURL(url string, traffic chan<- *trafficparse.Traffic) {
-
-	response, error := http.Get(url)
-	if error != nil {
-		fmt.Println(url, "http get fail")
-		traffic <- nil
-		return
-	}
-	defer response.Body.Close()
-
-	data, error := ioutil.ReadAll(response.Body)
-	if error != nil {
-		fmt.Println(url, "body read fail")
-		traffic <- nil
-		return
-	}
-
-	result, parseData := trafficparse.StreamerDataParse(data)
-	if result == false {
-		fmt.Println(url, "data parse fail")
-		traffic <- nil
-		return
-	}
-	fmt.Println(url, "read comleted")
-	traffic <- parseData
-}
-
-//====================================================================================================
 // Crawing
 //====================================================================================================
-func crawling(urls []string) {
-
-	// urls print
-	for index, url := range urls {
-		fmt.Println(index, url)
-	}
-	urlCount := len(urls)
-	fmt.Println("Url count", urlCount)
+func crawling(urls []string) *map[int]*trafficparse.Traffic {
 
 	result := make(chan *trafficparse.Traffic)
 
 	// read go rutin
-	for index := 0; index < urlCount; index++ {
-		go readURL(urls[index], result)
+	for index := 0; index < len(urls); index++ {
+		go trafficparse.ReadTraffic(urls[index], index, result)
 	}
 
+	var trafficMap map[int]*trafficparse.Traffic
+	trafficMap = make(map[int]*trafficparse.Traffic)
+
 	// complted wait
-	for index := 0; index < urlCount; index++ {
-		fmt.Println(*(<-result))
+	for index := 0; index < len(urls); index++ {
+		if traffic := <-result; traffic != nil {
+			trafficMap[traffic.SectionNumber] = traffic
+		}
 	}
+
+	return &trafficMap
 }
 
 //====================================================================================================
@@ -98,6 +67,12 @@ func loadUrls(filePath string) (bool, []string) {
 			break
 		}
 		urls = append(urls, string(line))
+	}
+
+	// urls print
+	fmt.Println("Url count", len(urls))
+	for index, url := range urls {
+		fmt.Println(index, url)
 	}
 
 	return len(urls) != 0, urls
@@ -124,8 +99,25 @@ func main() {
 	ticker := time.NewTicker(time.Millisecond * 5000)
 	go func() {
 		for start := range ticker.C {
-			crawling(urls)
-			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration : ", time.Now().Sub(start).Milliseconds())
+
+			trafficMap := crawling(urls)
+
+			// key sort
+			var keys []int
+			for key := range *trafficMap {
+				keys = append(keys, key)
+			}
+			sort.Ints(keys)
+
+			// print
+			for key := range keys {
+				fmt.Println((*trafficMap)[key])
+			}
+
+			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
+
+			// traffic calculate
+			// latency calculate
 		}
 	}()
 

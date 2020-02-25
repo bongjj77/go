@@ -3,6 +3,8 @@ package trafficparse
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 /*
@@ -49,6 +51,8 @@ import (
 
 // Traffic : json traffic struct
 type Traffic struct {
+	SectionNumber int
+
 	Host struct {
 		CPU         int    `json:"cpu"`
 		HostName    string `json:"host_name"`
@@ -94,4 +98,42 @@ func StreamerDataParse(data []byte) (bool, *Traffic) {
 	}
 
 	return true, traffic
+}
+
+// ReadTraffic : Read url(restream demon api)
+func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
+
+	response, error := http.Get(url)
+	if error != nil {
+		fmt.Println(url, "http get fail")
+		traffic <- nil
+		return
+	}
+	defer response.Body.Close()
+
+	data, error := ioutil.ReadAll(response.Body)
+	if error != nil {
+		fmt.Println(url, "body read fail")
+		traffic <- nil
+		return
+	}
+
+	tempData, error := ioutil.ReadFile("./traffic.json")
+	if error != nil {
+		fmt.Println(url, "json file read fail")
+		traffic <- nil
+		return
+	}
+	data = tempData
+
+	result, parsedTraffic := StreamerDataParse(data)
+	if result == false {
+		fmt.Println(url, "data parse fail")
+		traffic <- nil
+		return
+	}
+	fmt.Println(url, "read comleted")
+
+	parsedTraffic.SectionNumber = sectionNumber
+	traffic <- parsedTraffic
 }

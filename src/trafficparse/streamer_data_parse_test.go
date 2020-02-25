@@ -7,12 +7,8 @@ import (
 	"trafficparse"
 )
 
-// StreamerDataParse : restreamer output json data parse
+// TestStreamerDataParse : restreamer output json data parse
 func TestStreamerDataParse(t *testing.T) {
-
-	t.Error("Json file open fail")
-
-	// temp test
 	data, error := ioutil.ReadFile("./traffic.json")
 	if error != nil {
 		t.Error("Json file open fail")
@@ -20,11 +16,22 @@ func TestStreamerDataParse(t *testing.T) {
 	}
 
 	result, parseData := trafficparse.StreamerDataParse(data)
-	if result == false {
+	if result == false || parseData == nil {
 		t.Error("Data parse fail")
 		return
 	}
 
 	fmt.Println(parseData)
+
+}
+
+// TestReadTraffic : restreamer output json data parse
+func TestReadTraffic(t *testing.T) {
+
+	result := make(chan *trafficparse.Traffic)
+
+	go trafficparse.ReadTraffic("http://www.google.com", 0, result)
+
+	fmt.Println(<-result)
 
 }
