@@ -25,26 +25,25 @@ const (
 //====================================================================================================
 // Crawing
 //====================================================================================================
-func crawling(urls []string) *map[int]*trafficparse.Traffic {
+func crawling(urls []string) map[int]*trafficparse.Traffic {
 
-	result := make(chan *trafficparse.Traffic)
+	result := make(chan *trafficparse.Traffic, len(urls))
 
-	// read go rutin
-	for index := 0; index < len(urls); index++ {
-		go trafficparse.ReadTraffic(urls[index], index, result)
+	// http json data read - go routine
+	for index, url := range urls {
+		go trafficparse.ReadTraffic(url, index, result)
 	}
 
-	var trafficMap map[int]*trafficparse.Traffic
-	trafficMap = make(map[int]*trafficparse.Traffic)
+	traffics := make(map[int]*trafficparse.Traffic)
 
 	// complted wait
 	for index := 0; index < len(urls); index++ {
 		if traffic := <-result; traffic != nil {
-			trafficMap[traffic.SectionNumber] = traffic
+			traffics[traffic.SectionNumber] = traffic
 		}
 	}
 
-	return &trafficMap
+	return traffics
 }
 
 //====================================================================================================
@@ -82,6 +81,22 @@ func loadUrls(filePath string) (bool, []string) {
 // start
 //====================================================================================================
 func main() {
+
+	// test
+	testMap1 := map[int]int{1: 1, 2: 2, 3: 3}
+	var testMap2 map[int]int
+	testMap2 = testMap1
+
+	testMap2[2] = 100
+
+	for key, value := range testMap1 {
+		fmt.Println(key, value)
+	}
+
+	for key, value := range testMap2 {
+		fmt.Println(key, value)
+	}
+
 	fmt.Println(programName, programVersion, time.Now().Format(time.RFC3339), "start")
 
 	// max core use
@@ -95,23 +110,24 @@ func main() {
 		return
 	}
 
-	// time loop
+	// crarwing time loop - go routine
 	ticker := time.NewTicker(time.Millisecond * 5000)
 	go func() {
 		for start := range ticker.C {
 
-			trafficMap := crawling(urls)
+			// crawling
+			traffics := crawling(urls)
 
 			// key sort
 			var keys []int
-			for key := range *trafficMap {
+			for key := range traffics {
 				keys = append(keys, key)
 			}
 			sort.Ints(keys)
 
 			// print
 			for key := range keys {
-				fmt.Println((*trafficMap)[key])
+				fmt.Println(traffics[key])
 			}
 
 			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())

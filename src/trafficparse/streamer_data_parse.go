@@ -87,20 +87,7 @@ type Traffic struct {
 	} `json:"stream_list"`
 }
 
-// StreamerDataParse : restreamer output json data parse
-func StreamerDataParse(data []byte) (bool, *Traffic) {
-
-	traffic := &Traffic{}
-	error := json.Unmarshal(data, traffic)
-	if error != nil {
-		fmt.Println("Json parae fail")
-		return false, nil
-	}
-
-	return true, traffic
-}
-
-// ReadTraffic : Read url(restream demon api)
+// ReadTraffic : Read url(restream demon api) and Traffic struct create
 func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 
 	response, error := http.Get(url)
@@ -126,14 +113,16 @@ func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 	}
 	data = tempData
 
-	result, parsedTraffic := StreamerDataParse(data)
-	if result == false {
-		fmt.Println(url, "data parse fail")
+	// json to Traffic struct
+	trafficData := new(Traffic)
+	if error = json.Unmarshal(data, trafficData); error != nil {
+		fmt.Println(url, "json parae fail")
 		traffic <- nil
 		return
 	}
+
 	fmt.Println(url, "read comleted")
 
-	parsedTraffic.SectionNumber = sectionNumber
-	traffic <- parsedTraffic
+	trafficData.SectionNumber = sectionNumber
+	traffic <- trafficData
 }
