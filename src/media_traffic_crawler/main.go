@@ -2,8 +2,10 @@
 Media traffic crawler
 bongjj@gmail.com
 20200301
-동일 스트림의 구간 별 Streamer demone API를 동시 호출 하여 json 형식의 정보 수집 하여 시차/트래픽 정보를 처리
-url_list.txt 정보 제공 url 목록
+- 구간 별 Streamer Http API를 호출 하여 traffic 정보 수집(json)
+- 시차/트래픽 지연 정보 분석
+- 정보 요청 출력(http/json)
+- url_list.txt 정보 제공 Streamer url 목록(스트림 구간 순서로 설정)
 */
 package main
 
@@ -79,13 +81,21 @@ func main() {
 			traffics := crawling.Crawling(urls)
 
 			// traffic analize
-			analyze.Analyze(traffics)
+			streamAnalyze := analyze.Analyze(traffics)
+
+			fmt.Println(streamAnalyze)
+
+			// TODO : data save
 
 			// process duration
 			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
 
 		}
 	}()
+
+	// TODO : http server
+	// - 확인 요청 시간 기준 최대 개수 설정 하여 전송
+	// - 그래프 출력
 
 	// key input wait
 	fmt.Scanln()

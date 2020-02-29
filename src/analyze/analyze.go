@@ -3,14 +3,52 @@ package analyze
 import (
 	"crawling"
 	"fmt"
+	"time"
 )
 
+// Latency : latency info
+type Latency struct {
+	SectionNumber int
+	Latency       int64 // millisecond
+}
+
+// StreamAnalyze : traffic analyze result
+type StreamAnalyze struct {
+	CreateTime  time.Time
+	LatencyList []Latency
+}
+
+// NewStreamAnalyze : traffic create
+func NewStreamAnalyze(sectionCount int) *StreamAnalyze {
+	streamAnalyze := new(StreamAnalyze)
+
+	streamAnalyze.CreateTime = time.Now()
+	streamAnalyze.LatencyList = make([]Latency, 0)
+	return streamAnalyze
+}
+
 // Analyze :  Traffic struct analyze
-func Analyze(traffics []*crawling.Traffic) {
+func Analyze(traffics []*crawling.Traffic) *StreamAnalyze {
 
 	// print
-	for _, traffic := range traffics {
+	streamAnalyze := NewStreamAnalyze(len(traffics))
+	var timestamp uint64
+	for index, traffic := range traffics {
+
 		fmt.Println(traffic)
+
+		if len(traffic.StreamList) == 0 {
+			fmt.Println("Not exist stream")
+			break
+		}
+
+		if index == 0 {
+			timestamp = traffic.StreamList[0].Input.VideoTimestamp
+		}
+
+		streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, int64(timestamp - traffic.StreamList[0].Input.VideoTimestamp)})
+
 	}
 
+	return streamAnalyze
 }

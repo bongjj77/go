@@ -8,48 +8,6 @@ import (
 	"sort"
 )
 
-/*
- json to struct : https://mholt.github.io/json-to-go/
-
-{
-    "host": {
-        "cpu": 0,
-        "host_name": "test01",
-        "input_count": 1,
-        "ip": "127.0.0.1",
-        "memory_total": 8127,
-        "memory_used": 2161,
-        "output_count": 1,
-        "region": "korea",
-        "time": "2020-02-24 17:00:28",
-        "traffic": 927994458,
-        "version": "1.0"
-    },
-    "stream_list":[{
-            "stream": "app/123-456",
-            "input": {
-                "audio_framerate": 47.0,
-                "audio_timestamp": 926229,
-                "recv_traffic": 464221743,
-                "remote": "127.0.0.1:6782",
-                "send_traffic": 9638,
-                "video_framerate": 30.0,
-                "video_timestamp": 926200
-            },
-            "output": [
-                {
-                    "recv_traffic": 9787,
-                    "remote": "127.0.0.1:1935",
-                    "send_buffer": 0,
-                    "send_traffic": 463753290,
-                    "stream": "app/123-456"
-                }
-            ]
-		}
-	]
-}
-*/
-
 // Traffic : json traffic struct
 type Traffic struct {
 	SectionNumber int
@@ -71,18 +29,18 @@ type Traffic struct {
 		Stream string `json:"stream"`
 		Input  struct {
 			AudioFramerate float64 `json:"audio_framerate"`
-			AudioTimestamp int     `json:"audio_timestamp"`
-			RecvTraffic    int     `json:"recv_traffic"`
+			AudioTimestamp uint64  `json:"audio_timestamp"`
+			RecvTraffic    uint64  `json:"recv_traffic"`
 			Remote         string  `json:"remote"`
-			SendTraffic    int     `json:"send_traffic"`
+			SendTraffic    uint64  `json:"send_traffic"`
 			VideoFramerate float64 `json:"video_framerate"`
-			VideoTimestamp int     `json:"video_timestamp"`
+			VideoTimestamp uint64  `json:"video_timestamp"`
 		} `json:"input"`
 		Output []struct {
-			RecvTraffic int    `json:"recv_traffic"`
+			RecvTraffic uint64 `json:"recv_traffic"`
 			Remote      string `json:"remote"`
 			SendBuffer  int    `json:"send_buffer"`
-			SendTraffic int    `json:"send_traffic"`
+			SendTraffic uint64 `json:"send_traffic"`
 			Stream      string `json:"stream"`
 		} `json:"output"`
 	} `json:"stream_list"`
@@ -127,7 +85,7 @@ func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 	traffic <- NewTraffic(url, sectionNumber, data)
 }
 
-// Crawling : urls crawling
+// Crawling : streamer support urls crawling
 func Crawling(urls []string) []*Traffic {
 
 	result := make(chan *Traffic, len(urls))
@@ -146,7 +104,7 @@ func Crawling(urls []string) []*Traffic {
 		}
 	}
 
-	// Sort(section number)
+	// sort(section number)
 	sort.Slice(traffics, func(i, j int) bool {
 		return traffics[i].SectionNumber < traffics[j].SectionNumber
 	})
@@ -179,6 +137,84 @@ const TestTrafficJSON string = `{
                 "send_traffic": 9638,
                 "video_framerate": 30.0,
                 "video_timestamp": 926200
+            },
+            "output": [
+                {
+                    "recv_traffic": 9787,
+                    "remote": "127.0.0.1:1935",
+                    "send_buffer": 0,
+                    "send_traffic": 463753290,
+                    "stream": "app/123-456"
+                }
+            ]
+		}
+	]
+}`
+
+// TestTrafficJSON : test json data
+const TestTrafficJSON1 string = `{
+    "host": {
+        "cpu": 0,
+        "host_name": "test01",
+        "input_count": 1,
+        "ip": "127.0.0.1",
+        "memory_total": 8127,
+        "memory_used": 2161,
+        "output_count": 1,
+        "region": "korea",
+        "time": "2020-02-24 17:00:28",
+        "traffic": 927994458,
+        "version": "1.0"
+    },
+    "stream_list":[{
+            "stream": "app/123-456",
+            "input": {
+                "audio_framerate": 47.0,
+                "audio_timestamp": 926229,
+                "recv_traffic": 464221743,
+                "remote": "127.0.0.1:6782",
+                "send_traffic": 9638,
+                "video_framerate": 30.0,
+                "video_timestamp": 826200
+            },
+            "output": [
+                {
+                    "recv_traffic": 9787,
+                    "remote": "127.0.0.1:1935",
+                    "send_buffer": 0,
+                    "send_traffic": 463753290,
+                    "stream": "app/123-456"
+                }
+            ]
+		}
+	]
+}`
+
+// TestTrafficJSON : test json data
+const TestTrafficJSON2 string = `{
+    "host": {
+        "cpu": 0,
+        "host_name": "test01",
+        "input_count": 1,
+        "ip": "127.0.0.1",
+        "memory_total": 8127,
+        "memory_used": 2161,
+        "output_count": 1,
+        "region": "korea",
+        "time": "2020-02-24 17:00:28",
+        "traffic": 927994458,
+        "version": "1.0"
+    },
+    "stream_list":[{
+            "stream": "app/123-456",
+            "input": {
+                "audio_framerate": 47.0,
+                "audio_timestamp": 926229,
+                "recv_traffic": 464221743,
+                "remote": "127.0.0.1:6782",
+                "send_traffic": 9638,
+                "video_framerate": 30.0,
+                "video_timestamp": 726200
             },
             "output": [
                 {
