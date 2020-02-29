@@ -8,9 +8,9 @@ url_list.txt 정보 제공 url 목록
 package main
 
 import (
-	. "analyze"
+	"analyze"
 	"bufio"
-	. "crawling"
+	"crawling"
 	"fmt"
 	"os"
 	"runtime"
@@ -76,12 +76,14 @@ func main() {
 		for start := range ticker.C {
 
 			// crawling
-			traffics := Crawling(urls)
-
-			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
+			traffics := crawling.Crawling(urls)
 
 			// traffic analize
-			Analyze(traffics)
+			analyze.Analyze(traffics)
+
+			// process duration
+			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
+
 		}
 	}()
 
