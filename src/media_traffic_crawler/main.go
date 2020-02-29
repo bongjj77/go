@@ -81,22 +81,6 @@ func loadUrls(filePath string) (bool, []string) {
 // start
 //====================================================================================================
 func main() {
-
-	// test
-	testMap1 := map[int]int{1: 1, 2: 2, 3: 3}
-	var testMap2 map[int]int
-	testMap2 = testMap1
-
-	testMap2[2] = 100
-
-	for key, value := range testMap1 {
-		fmt.Println(key, value)
-	}
-
-	for key, value := range testMap2 {
-		fmt.Println(key, value)
-	}
-
 	fmt.Println(programName, programVersion, time.Now().Format(time.RFC3339), "start")
 
 	// max core use

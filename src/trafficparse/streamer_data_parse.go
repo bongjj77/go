@@ -87,7 +87,22 @@ type Traffic struct {
 	} `json:"stream_list"`
 }
 
+// newTraffic : traffic create
+// - string to json
+func newTraffic(url string, sectionNumber int, data []byte) *Traffic {
+	traffic := new(Traffic)
+	traffic.SectionNumber = sectionNumber
+	if error := json.Unmarshal(data, traffic); error != nil {
+		fmt.Println(url, "json parae fail")
+		return nil
+	}
+
+	return traffic
+}
+
 // ReadTraffic : Read url(restream demon api) and Traffic struct create
+// - read url
+// - make traffic struct
 func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 
 	response, error := http.Get(url)
@@ -105,24 +120,47 @@ func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 		return
 	}
 
-	tempData, error := ioutil.ReadFile("./traffic.json")
-	if error != nil {
-		fmt.Println(url, "json file read fail")
-		traffic <- nil
-		return
-	}
-	data = tempData
+	// test
+	data = []byte(testTrafficJSON)
 
-	// json to Traffic struct
-	trafficData := new(Traffic)
-	if error = json.Unmarshal(data, trafficData); error != nil {
-		fmt.Println(url, "json parae fail")
-		traffic <- nil
-		return
-	}
-
-	fmt.Println(url, "read comleted")
-
-	trafficData.SectionNumber = sectionNumber
-	traffic <- trafficData
+	traffic <- newTraffic(url, sectionNumber, data)
 }
+
+// test json data
+const testTrafficJSON string = `{
+    "host": {
+        "cpu": 0,
+        "host_name": "test01",
+        "input_count": 1,
+        "ip": "127.0.0.1",
+        "memory_total": 8127,
+        "memory_used": 2161,
+        "output_count": 1,
+        "region": "korea",
+        "time": "2020-02-24 17:00:28",
+        "traffic": 927994458,
+        "version": "1.0"
+    },
+    "stream_list":[{
+            "stream": "app/123-456",
+            "input": {
+                "audio_framerate": 47.0,
+                "audio_timestamp": 926229,
+                "recv_traffic": 464221743,
+                "remote": "127.0.0.1:6782",
+                "send_traffic": 9638,
+                "video_framerate": 30.0,
+                "video_timestamp": 926200
+            },
+            "output": [
+                {
+                    "recv_traffic": 9787,
+                    "remote": "127.0.0.1:1935",
+                    "send_buffer": 0,
+                    "send_traffic": 463753290,
+                    "stream": "app/123-456"
+                }
+            ]
+		}
+	]
+}`
