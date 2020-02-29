@@ -1,10 +1,11 @@
-package trafficparse
+package crawling
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 )
 
 /*
@@ -87,9 +88,9 @@ type Traffic struct {
 	} `json:"stream_list"`
 }
 
-// newTraffic : traffic create
+// NewTraffic : traffic create
 // - string to json
-func newTraffic(url string, sectionNumber int, data []byte) *Traffic {
+func NewTraffic(url string, sectionNumber int, data []byte) *Traffic {
 	traffic := new(Traffic)
 	traffic.SectionNumber = sectionNumber
 	if error := json.Unmarshal(data, traffic); error != nil {
@@ -121,13 +122,40 @@ func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 	}
 
 	// test
-	data = []byte(testTrafficJSON)
+	data = []byte(TestTrafficJSON)
 
-	traffic <- newTraffic(url, sectionNumber, data)
+	traffic <- NewTraffic(url, sectionNumber, data)
 }
 
-// test json data
-const testTrafficJSON string = `{
+// Crawling : urls crawling
+func Crawling(urls []string) []*Traffic {
+
+	result := make(chan *Traffic, len(urls))
+
+	// http json data read - go routine
+	for index, url := range urls {
+		go ReadTraffic(url, index, result)
+	}
+
+	traffics := make([]*Traffic, 0)
+
+	// complted wait
+	for index := 0; index < len(urls); index++ {
+		if traffic := <-result; traffic != nil {
+			traffics = append(traffics, traffic)
+		}
+	}
+
+	// Sort(section number)
+	sort.Slice(traffics, func(i, j int) bool {
+		return traffics[i].SectionNumber < traffics[j].SectionNumber
+	})
+
+	return traffics
+}
+
+// TestTrafficJSON : test json data
+const TestTrafficJSON string = `{
     "host": {
         "cpu": 0,
         "host_name": "test01",

@@ -8,43 +8,19 @@ url_list.txt 정보 제공 url 목록
 package main
 
 import (
+	. "analyze"
 	"bufio"
+	. "crawling"
 	"fmt"
 	"os"
 	"runtime"
-	"sort"
 	"time"
-	"trafficparse"
 )
 
 const (
 	programName    = "Media traffic crawler"
 	programVersion = "1.0"
 )
-
-//====================================================================================================
-// Crawing
-//====================================================================================================
-func crawling(urls []string) map[int]*trafficparse.Traffic {
-
-	result := make(chan *trafficparse.Traffic, len(urls))
-
-	// http json data read - go routine
-	for index, url := range urls {
-		go trafficparse.ReadTraffic(url, index, result)
-	}
-
-	traffics := make(map[int]*trafficparse.Traffic)
-
-	// complted wait
-	for index := 0; index < len(urls); index++ {
-		if traffic := <-result; traffic != nil {
-			traffics[traffic.SectionNumber] = traffic
-		}
-	}
-
-	return traffics
-}
 
 //====================================================================================================
 // load url list file
@@ -100,24 +76,12 @@ func main() {
 		for start := range ticker.C {
 
 			// crawling
-			traffics := crawling(urls)
-
-			// key sort
-			var keys []int
-			for key := range traffics {
-				keys = append(keys, key)
-			}
-			sort.Ints(keys)
-
-			// print
-			for key := range keys {
-				fmt.Println(traffics[key])
-			}
+			traffics := Crawling(urls)
 
 			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
 
-			// traffic calculate
-			// latency calculate
+			// traffic analize
+			Analyze(traffics)
 		}
 	}()
 
