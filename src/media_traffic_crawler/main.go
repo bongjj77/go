@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -55,6 +56,11 @@ func loadUrls(filePath string) (bool, []string) {
 	return len(urls) != 0, urls
 }
 
+type collectData struct {
+	stream      string
+	analyzeList []*analyze.StreamAnalyze
+}
+
 //====================================================================================================
 // start
 //====================================================================================================
@@ -66,11 +72,14 @@ func main() {
 	fmt.Println("Cpu core :", runtime.GOMAXPROCS(0))
 
 	result, urls := loadUrls("./url_list.txt")
-
 	if result == false {
 		fmt.Println("Url list load fail")
 		return
 	}
+
+	// key : first traffic StreamName
+	collectDataMap := make(map[string]*collectData)
+	dataMutex := new(sync.Mutex)
 
 	// crarwing time loop - go routine
 	ticker := time.NewTicker(time.Millisecond * 5000)
@@ -79,13 +88,29 @@ func main() {
 
 			// crawling
 			traffics := crawling.Crawling(urls)
+			if len(traffics) == 0 || len(traffics[0].StreamList) == 0 {
+				fmt.Println("Traffics size zero")
+				continue
+			}
+
+			stream := traffics[0].StreamList[0].Stream
 
 			// traffic analize
 			streamAnalyze := analyze.Analyze(traffics)
 
 			fmt.Println(streamAnalyze)
 
-			// TODO : data save
+			// ------------------------------ sync start ------------------------------
+			dataMutex.Lock()
+
+			// data insert
+			if _, exist := collectDataMap[stream]; exist != true {
+				collectDataMap[stream] = &collectData{stream, make([]*analyze.StreamAnalyze, 0)}
+			}
+			collectDataMap[stream].analyzeList = append(collectDataMap[stream].analyzeList, streamAnalyze)
+
+			//  ------------------------------ sync end ------------------------------
+			dataMutex.Unlock()
 
 			// process duration
 			fmt.Println("Crawing :", start.Format(time.RFC3339), "duration :", time.Now().Sub(start).Milliseconds())
