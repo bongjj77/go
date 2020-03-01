@@ -14,6 +14,7 @@ import (
 	"bufio"
 	"crawling"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 	"sync"
@@ -121,6 +122,68 @@ func main() {
 	// TODO : http server
 	// - 확인 요청 시간 기준 최대 개수 설정 하여 전송
 	// - 그래프 출력
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		html := `
+				<html>
+				<head>
+					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
+				</head>
+				<canvas id="myChart" width="400" height="400"></canvas>
+				<script>
+					var ctx = document.getElementById('myChart');
+					var myChart = new Chart(ctx, {
+						type: 'line',
+						data: {
+							labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+							datasets: [{
+								label: '# of Votes',
+								data: [12, 19, 3, 5, 2, 3],
+								backgroundColor: [
+									'rgba(255, 99, 132, 0.2)',
+									'rgba(54, 162, 235, 0.2)',
+									'rgba(255, 206, 86, 0.2)',
+									'rgba(75, 192, 192, 0.2)',
+									'rgba(153, 102, 255, 0.2)',
+									'rgba(255, 159, 64, 0.2)'
+								],
+								borderColor: [
+									'rgba(255, 99, 132, 1)',
+									'rgba(54, 162, 235, 1)',
+									'rgba(255, 206, 86, 1)',
+									'rgba(75, 192, 192, 1)',
+									'rgba(153, 102, 255, 1)',
+									'rgba(255, 159, 64, 1)'
+								],
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: false,
+							scales: {
+								yAxes: [{
+									ticks: {
+										beginAtZero: true
+									}
+								}]
+							},
+						}
+					});
+				</script>
+				</html>
+				`
+
+		writer.Header().Set("Content-Type", "text/html") // HTML 헤더 설정
+		writer.Write([]byte(html))                       // 웹 브라우저에 응답
+	})
+
+	http.Handle("/http_file/", http.StripPrefix("/http_file/", http.FileServer(http.Dir("http_file"))))
+
+	http.HandleFunc("/get_latency_data.api", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("get lantency test test"))
+	})
+
+	http.ListenAndServe(":8080", nil)
 
 	// key input wait
 	fmt.Scanln()
