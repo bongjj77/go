@@ -12,8 +12,10 @@ package main
 import (
 	"analyze"
 	"bufio"
+	"chart"
 	"crawling"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
@@ -26,9 +28,7 @@ const (
 	programVersion = "1.0"
 )
 
-//====================================================================================================
-// load url list file
-//====================================================================================================
+// loadUrls : load url list file
 func loadUrls(filePath string) (bool, []string) {
 	file, error := os.Open(filePath)
 	if error != nil {
@@ -57,13 +57,25 @@ func loadUrls(filePath string) (bool, []string) {
 	return len(urls) != 0, urls
 }
 
-type collectData struct {
-	stream      string
-	analyzeList []*analyze.StreamAnalyze
+// readLocalHTML : local html file read
+func readLocalHTML(path string) []byte {
+
+	data, error := ioutil.ReadFile(path)
+	if error != nil {
+		fmt.Println(path, "read fail")
+		return nil
+	}
+
+	return data
 }
 
 //====================================================================================================
 // start
+// - cpu count process
+// - url list load
+// - crawling timer
+// - data analyze
+// - http request process
 //====================================================================================================
 func main() {
 	fmt.Println(programName, programVersion, time.Now().Format(time.RFC3339), "start")
@@ -79,7 +91,7 @@ func main() {
 	}
 
 	// key : first traffic StreamName
-	collectDataMap := make(map[string]*collectData)
+	collectDatas := make(map[string]*(chart.CollectData))
 	dataMutex := new(sync.Mutex)
 
 	// crarwing time loop - go routine
@@ -105,10 +117,10 @@ func main() {
 			dataMutex.Lock()
 
 			// data insert
-			if _, exist := collectDataMap[stream]; exist != true {
-				collectDataMap[stream] = &collectData{stream, make([]*analyze.StreamAnalyze, 0)}
+			if _, exist := collectDatas[stream]; exist == false {
+				collectDatas[stream] = &chart.CollectData{stream, make([]*analyze.StreamAnalyze, 0)}
 			}
-			collectDataMap[stream].analyzeList = append(collectDataMap[stream].analyzeList, streamAnalyze)
+			collectDatas[stream].AnalyzeList = append(collectDatas[stream].AnalyzeList, streamAnalyze)
 
 			//  ------------------------------ sync end ------------------------------
 			dataMutex.Unlock()
@@ -119,71 +131,34 @@ func main() {
 		}
 	}()
 
-	// TODO : http server
-	// - 확인 요청 시간 기준 최대 개수 설정 하여 전송
-	// - 그래프 출력
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		html := `
-				<html>
-				<head>
-					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
-					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
-				</head>
-				<canvas id="myChart" width="400" height="400"></canvas>
-				<script>
-					var ctx = document.getElementById('myChart');
-					var myChart = new Chart(ctx, {
-						type: 'line',
-						data: {
-							labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-							datasets: [{
-								label: '# of Votes',
-								data: [12, 19, 3, 5, 2, 3],
-								backgroundColor: [
-									'rgba(255, 99, 132, 0.2)',
-									'rgba(54, 162, 235, 0.2)',
-									'rgba(255, 206, 86, 0.2)',
-									'rgba(75, 192, 192, 0.2)',
-									'rgba(153, 102, 255, 0.2)',
-									'rgba(255, 159, 64, 0.2)'
-								],
-								borderColor: [
-									'rgba(255, 99, 132, 1)',
-									'rgba(54, 162, 235, 1)',
-									'rgba(255, 206, 86, 1)',
-									'rgba(75, 192, 192, 1)',
-									'rgba(153, 102, 255, 1)',
-									'rgba(255, 159, 64, 1)'
-								],
-								borderWidth: 1
-							}]
-						},
-						options: {
-							responsive: false,
-							scales: {
-								yAxes: [{
-									ticks: {
-										beginAtZero: true
-									}
-								}]
-							},
-						}
-					});
-				</script>
-				</html>
-				`
-
-		writer.Header().Set("Content-Type", "text/html") // HTML 헤더 설정
-		writer.Write([]byte(html))                       // 웹 브라우저에 응답
-	})
-
+	// file handle
 	http.Handle("/http_file/", http.StripPrefix("/http_file/", http.FileServer(http.Dir("http_file"))))
 
-	http.HandleFunc("/get_latency_data.api", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write([]byte("get lantency test test"))
+	// root
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte(programName + programVersion))
 	})
 
-	http.ListenAndServe(":8080", nil)
+	// get_latency_data.api
+	http.HandleFunc("/get_latency_data.api", func(writer http.ResponseWriter, request *http.Request) {
+
+		// ------------------------------ sync start ------------------------------
+		dataMutex.Lock()
+
+		// TODO : data insert
+		chartHTML := chart.MakeLatecyChart(collectDatas)
+		fmt.Println("chart html :", chartHTML)
+		//  ------------------------------ sync end ------------------------------
+		dataMutex.Unlock()
+
+		writer.Header().Set("Content-Type", "text/html") // HTML 헤더 설정
+		writer.Write([]byte(chartHTML))
+	})
+
+	if error := http.ListenAndServe(":8080", nil); error != nil {
+		fmt.Println("http server fail")
+		return
+	}
 
 	// key input wait
 	fmt.Scanln()

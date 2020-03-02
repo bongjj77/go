@@ -3,13 +3,15 @@ package analyze
 import (
 	"crawling"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
 // Latency : latency info
 type Latency struct {
-	SectionNumber int
-	Latency       int64 // millisecond
+	Section int
+	Host    string
+	Latency int64 // millisecond
 }
 
 // StreamAnalyze : traffic analyze result
@@ -19,7 +21,7 @@ type StreamAnalyze struct {
 }
 
 // NewStreamAnalyze : traffic create
-func NewStreamAnalyze(sectionCount int) *StreamAnalyze {
+func NewStreamAnalyze() *StreamAnalyze {
 	streamAnalyze := new(StreamAnalyze)
 
 	streamAnalyze.CreateTime = time.Now()
@@ -31,7 +33,7 @@ func NewStreamAnalyze(sectionCount int) *StreamAnalyze {
 func Analyze(traffics []*crawling.Traffic) *StreamAnalyze {
 
 	// print
-	streamAnalyze := NewStreamAnalyze(len(traffics))
+	streamAnalyze := NewStreamAnalyze()
 	var timestamp uint64
 	for index, traffic := range traffics {
 
@@ -46,7 +48,11 @@ func Analyze(traffics []*crawling.Traffic) *StreamAnalyze {
 			timestamp = traffic.StreamList[0].Input.VideoTimestamp
 		}
 
-		streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, int64(timestamp - traffic.StreamList[0].Input.VideoTimestamp)})
+		// test
+		timestamp = uint64(rand.Intn(100))
+		streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName, int64(timestamp)})
+
+		//streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName,, int64(timestamp - traffic.StreamList[0].Input.VideoTimestamp)})
 
 	}
 

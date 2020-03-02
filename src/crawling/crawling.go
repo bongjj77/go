@@ -100,6 +100,7 @@ func Crawling(urls []string) []*Traffic {
 	// complted wait
 	for index := 0; index < len(urls); index++ {
 		if traffic := <-result; traffic != nil {
+
 			traffics = append(traffics, traffic)
 		}
 	}
