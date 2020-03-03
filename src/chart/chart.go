@@ -1,17 +1,33 @@
 package chart
 
 import (
-	"analyze"
 	"fmt"
-	"sort"
 	"strconv"
 	"time"
 )
 
-// CollectData : collect data
-type CollectData struct {
-	Stream      string
-	AnalyzeList []*analyze.StreamAnalyze
+// Section :
+type Section struct {
+	Number      int
+	Host        string
+	LatencyList []int64
+}
+
+// CollectedData :
+type CollectedData struct {
+	Stream   string
+	Times    []time.Time
+	Sections []*Section
+}
+
+// NewCollectedData :
+func NewCollectedData(sectionCount int) *CollectedData {
+	collectedData := &CollectedData{Times: make([]time.Time, 0), Sections: make([]*Section, sectionCount)}
+	for index := range collectedData.Sections {
+		collectedData.Sections[index] = &Section{Number: index, LatencyList: make([]int64, 0)}
+	}
+
+	return collectedData
 }
 
 const latencyFormat string = `
@@ -45,57 +61,30 @@ const latencyFormat string = `
 </html>
 `
 
-type sectionInfo struct {
-	host     string
-	latencys string
-}
-
 // MakeLatecyChart : make latency chart
 // - chart.js
-// - CollectData -> sectionInfo
-// - current only one CollectData
-func MakeLatecyChart(collectDataMap map[string]*CollectData) string {
+func MakeLatecyChart(collectedData *CollectedData) string {
 
 	labels := ""
-	stream := ""
+	latencyLineList := make([]string, len(collectedData.Sections))
+	for index, collectedTime := range collectedData.Times {
+		if index != 0 {
+			labels += ", "
 
-	sectionInfos := make(map[int]*sectionInfo)
-	for _, collectData := range collectDataMap {
+			for sectionIndex := range latencyLineList {
+				latencyLineList[sectionIndex] += ", "
+			}
 
-		if len(stream) == 0 {
-			stream = collectData.Stream
 		}
-		for index, analyzeData := range collectData.AnalyzeList {
+		labels += "'" + collectedTime.Format(time.Stamp) + "'"
 
-			// label
-			if index != 0 {
-				labels += ", "
-			}
-			labels += "'" + analyzeData.CreateTime.Format(time.Stamp) + "'"
-
-			// data set
-			for _, latency := range analyzeData.LatencyList {
-
-				if _, exist := sectionInfos[latency.Section]; exist == false {
-					// crate + append
-					sectionInfos[latency.Section] = &sectionInfo{latency.Host, strconv.FormatInt(latency.Latency, 10)}
-				} else {
-					// append
-					sectionInfos[latency.Section].latencys += ", " + strconv.FormatInt(latency.Latency, 10)
-				}
-			}
+		for sectionIndex := range latencyLineList {
+			latencyLineList[sectionIndex] += strconv.FormatInt(collectedData.Sections[sectionIndex].LatencyList[index], 10)
 		}
 	}
-
-	// map sort
-	keys := make([]int, 0)
-	for key := range sectionInfos {
-		keys = append(keys, key)
-	}
-	sort.Ints(keys)
 
 	dataSets := ""
-	for index, section := range keys {
+	for index, section := range collectedData.Sections {
 		if index != 0 {
 			dataSets += ", "
 		}
@@ -107,10 +96,11 @@ func MakeLatecyChart(collectDataMap map[string]*CollectData) string {
 			backgroundColor:'rgba(0, 0, 0, 0)',
 			borderColor: 'rgba(%d, %d, %d, 1)',
 			borderWidth: 1
-		}`, section, sectionInfos[section].host,
-			sectionInfos[section].latencys,
-			(section*50)%255, (section*100)%255, (section*150)%255)
+		}`, index, section.Host,
+			latencyLineList[index],
+			(index*50)%255, (index*100)%255, (index*150)%255)
+
 	}
 
-	return fmt.Sprintf(latencyFormat, stream, labels, dataSets)
+	return fmt.Sprintf(latencyFormat, collectedData.Stream, labels, dataSets)
 }

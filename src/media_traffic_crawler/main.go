@@ -91,7 +91,8 @@ func main() {
 	}
 
 	// key : first traffic StreamName
-	collectDatas := make(map[string]*(chart.CollectData))
+	collectCount := len(urls)
+	collectedData := chart.NewCollectedData(len(urls))
 	dataMutex := new(sync.Mutex)
 
 	// crarwing time loop - go routine
@@ -101,26 +102,33 @@ func main() {
 
 			// crawling
 			traffics := crawling.Crawling(urls)
-			if len(traffics) == 0 || len(traffics[0].StreamList) == 0 {
-				fmt.Println("Traffics size zero")
+			if len(traffics) == collectCount || len(traffics[0].StreamList) == 0 {
+				fmt.Println("Traffics count fail")
 				continue
 			}
 
-			stream := traffics[0].StreamList[0].Stream
-
 			// traffic analize
-			streamAnalyze := analyze.Analyze(traffics)
-
-			fmt.Println(streamAnalyze)
+			analyzeData := analyze.Analyze(traffics)
+			fmt.Println(analyzeData)
 
 			// ------------------------------ sync start ------------------------------
 			dataMutex.Lock()
 
-			// data insert
-			if _, exist := collectDatas[stream]; exist == false {
-				collectDatas[stream] = &chart.CollectData{stream, make([]*analyze.StreamAnalyze, 0)}
+			// time append
+			collectedData.Times = append(collectedData.Times, start)
+
+			if len(collectedData.Stream) == 0 {
+				collectedData.Stream = traffics[0].StreamList[0].Stream
 			}
-			collectDatas[stream].AnalyzeList = append(collectDatas[stream].AnalyzeList, streamAnalyze)
+
+			// latency append per section
+			for _, latency := range analyzeData.LatencyList {
+				collectedData.Sections[latency.Section].LatencyList = append(collectedData.Sections[latency.Section].LatencyList, latency.Latency)
+
+				if len(collectedData.Sections[latency.Section].Host) == 0 {
+					collectedData.Sections[latency.Section].Host = latency.Host
+				}
+			}
 
 			//  ------------------------------ sync end ------------------------------
 			dataMutex.Unlock()
@@ -145,8 +153,7 @@ func main() {
 		// ------------------------------ sync start ------------------------------
 		dataMutex.Lock()
 
-		// TODO : data insert
-		chartHTML := chart.MakeLatecyChart(collectDatas)
+		chartHTML := chart.MakeLatecyChart(collectedData)
 		fmt.Println("chart html :", chartHTML)
 		//  ------------------------------ sync end ------------------------------
 		dataMutex.Unlock()
