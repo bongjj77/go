@@ -6,6 +6,7 @@ bongjj@gmail.com
 - 시차/트래픽 지연 정보 분석
 - 정보 요청 출력(http/json)
 - url_list.txt 정보 제공 Streamer url 목록(스트림 구간 순서로 설정)
+- single test : "TODO : single test" 주석 설정 및 제거 체크
 */
 package main
 
@@ -102,7 +103,7 @@ func main() {
 
 			// crawling
 			traffics := crawling.Crawling(urls)
-			if len(traffics) == collectCount || len(traffics[0].StreamList) == 0 {
+			if len(traffics) != collectCount || len(traffics[0].StreamList) == 0 {
 				fmt.Println("Traffics count fail")
 				continue
 			}

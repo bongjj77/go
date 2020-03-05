@@ -48,8 +48,24 @@ const latencyFormat string = `
 		},
 		options: {
 			responsive: false,
+			title: {
+				display: true,
+				text: 'Media streaming latecy chart'
+			},
 			scales: {
+				xAxes: [{
+					display: true,
+					scaleLabel: {
+						display: true,
+						labelString: 'Time'
+					}
+				}],
 				yAxes: [{
+					display: true,
+					scaleLabel: {
+						display: true,
+						labelString: 'Latency(ms)'
+					},
 					ticks: {
 						beginAtZero: true
 					}
@@ -76,7 +92,7 @@ func MakeLatecyChart(collectedData *CollectedData) string {
 			}
 
 		}
-		labels += "'" + collectedTime.Format(time.Stamp) + "'"
+		labels += fmt.Sprintf("'%d:%d:%d'", collectedTime.Hour(), collectedTime.Minute(), collectedTime.Second())
 
 		for sectionIndex := range latencyLineList {
 			latencyLineList[sectionIndex] += strconv.FormatInt(collectedData.Sections[sectionIndex].LatencyList[index], 10)

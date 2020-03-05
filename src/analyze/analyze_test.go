@@ -8,6 +8,7 @@ import (
 )
 
 // TestAnalyze : urls crawling
+// "TODO : single" test 주석 확인/제거
 func TestAnalyze(t *T) {
 
 	traffics := []*Traffic{

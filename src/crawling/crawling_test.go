@@ -18,6 +18,7 @@ func TestReadTraffic(t *T) {
 }
 
 // TestCrawling : urls crawling
+// "TODO : single" test 주석 확인/제거
 func TestCrawling(t *T) {
 
 	urls := make([]string, 3)

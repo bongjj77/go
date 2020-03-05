@@ -3,7 +3,6 @@ package analyze
 import (
 	"crawling"
 	"fmt"
-	"math/rand"
 	"time"
 )
 
@@ -48,11 +47,11 @@ func Analyze(traffics []*crawling.Traffic) *StreamAnalyze {
 			timestamp = traffic.StreamList[0].Input.VideoTimestamp
 		}
 
-		// test
-		timestamp = uint64(rand.Intn(100))
-		streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName, int64(timestamp)})
+		// TODO : single test
+		//timestamp = uint64(rand.Intn(100))
+		//streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName, int64(timestamp)})
 
-		//streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName,, int64(timestamp - traffic.StreamList[0].Input.VideoTimestamp)})
+		streamAnalyze.LatencyList = append(streamAnalyze.LatencyList, Latency{traffic.SectionNumber, traffic.Host.HostName, int64(timestamp - traffic.StreamList[0].Input.VideoTimestamp)})
 
 	}
 

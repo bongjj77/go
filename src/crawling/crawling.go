@@ -79,8 +79,8 @@ func ReadTraffic(url string, sectionNumber int, traffic chan<- *Traffic) {
 		return
 	}
 
-	// test
-	data = []byte(TestTrafficJSON)
+	// TODO : single test
+	//data = []byte(TestTrafficJSON)
 
 	traffic <- NewTraffic(url, sectionNumber, data)
 }
